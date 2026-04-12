@@ -9,8 +9,8 @@ import os
 import multiprocessing
 
 PUBKEY = "022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc"
-START  = "0x10000000000000000000000000000000000000"
-END    = "0x1ffffffffffffffffffffffffffffffffffffff"
+START  = "0x1000000000000000000000000000000000000"
+END    = "0x1ffffffffffffffffffffffffffffffffffff"
 
 def check_environment():
     print("=" * 65)

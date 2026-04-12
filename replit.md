@@ -104,13 +104,13 @@ Probabilistic search that picks a random window of N TKeys within the range and 
 **Usage:**
 ```bash
 # Machine 1 (seed 0)
-python3 bsgs_scan.py --cpu -R 50 --seed 0 -p <pubkey> -s 0x2000000000000 -e 0x3ffffffffffff
+python3 bsgs_scan.py --cpu -R 50 --seed 0 -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc -s 0x1000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffff
 
 # Machine 2 (seed 1) — completely independent random sequence
-python3 bsgs_scan.py --cpu -R 50 --seed 1 -p <pubkey> -s 0x2000000000000 -e 0x3ffffffffffff
+python3 bsgs_scan.py --cpu -R 50 --seed 1 -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc -s 0x1000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffff
 
 # Resume after Ctrl+C (seed must match)
-python3 bsgs_scan.py --cpu --resume -R 50 --seed 0 -p <pubkey> -s 0x2000000000000 -e 0x3ffffffffffff
+python3 bsgs_scan.py --cpu --resume -R 50 --seed 0 -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc -s 0x1000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffff
 ```
 
 **State file:** auto-named `bsgs_rand_{pubkey[:12]}_{start[:8]}_s{seed}.state`
