@@ -7,7 +7,7 @@
   "workers": 8,
   "scan_tkeys": 50.0,
   "seed": 0,
-  "attempt": 2,
-  "total_elapsed": 340.1073696613312,
-  "saved_at": "2026-04-12T08:54:10.640872"
+  "attempt": 0,
+  "total_elapsed": 64.15178608894348,
+  "saved_at": "2026-04-12T09:04:48.868209"
 }

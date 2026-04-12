@@ -530,8 +530,9 @@ class ProgressBar:
         self._samples     = []   # [(timestamp, keys_done), ...]
         self._last_render = 0.0
         self._active      = True
-        self._last_len    = 0    # chars printed on last render (for clean erase)
-        self.current_key  = None # current key being scanned (hex string)
+        self._last_len     = 0    # chars in bar line on last render
+        self._last_key_len = 0    # chars in key line on last render
+        self.current_key   = None # current key being scanned (hex string)
 
     # ── public API ───────────────────────────────────────────────────────
 
@@ -559,11 +560,16 @@ class ProgressBar:
         self._write(line)
 
     def clear(self):
-        """Erase the progress line so a summary can be printed below it."""
+        """Erase both lines (key + bar) so a summary can be printed."""
         if self._last_len:
+            # Erase bar line
             sys.stdout.write('\r' + ' ' * self._last_len + '\r')
+            if self._last_key_len:
+                # Move up one line and erase key line
+                sys.stdout.write('\033[A\r' + ' ' * self._last_key_len + '\r')
             sys.stdout.flush()
-            self._last_len = 0
+            self._last_len     = 0
+            self._last_key_len = 0
 
     def close(self):
         """Stop the bar and leave the cursor on a fresh line."""
@@ -615,17 +621,13 @@ class ProgressBar:
         ela_str = self._fmt_time(elapsed)
         scn_str = self._fmt_keys(self.keys_done)
 
-        key_str = ""
-        if self.current_key:
-            key_str = f" │ key {self.current_key}"
-
         if self.total_keys and self.total_keys > 0:
             pct  = min(self.keys_done / self.total_keys * 100, 100.0)
             rem  = (self.total_keys - self.keys_done) / speed if speed > 0 else None
             eta  = self._fmt_time(rem)
-            meta = f" {pct:5.2f}% │ {spd_str} │ {ela_str} elapsed │ ETA {eta} │ {scn_str}{key_str}"
+            meta = f" {pct:5.2f}% │ {spd_str} │ {ela_str} elapsed │ ETA {eta} │ {scn_str}"
         else:
-            meta = f" {spd_str} │ {ela_str} elapsed │ {scn_str} scanned{key_str}"
+            meta = f" {spd_str} │ {ela_str} elapsed │ {scn_str} scanned"
 
         # Bar width = remaining terminal space after meta
         bar_w = max(term_w - len(meta) - 4, 8)
@@ -642,11 +644,25 @@ class ProgressBar:
         return line
 
     def _write(self, line):
-        # Pad or trim to erase previous line fully
-        prev = self._last_len
-        if len(line) < prev:
-            line = line + ' ' * (prev - len(line))
-        sys.stdout.write('\r' + line)
+        # Pad bar line to erase previous bar line fully
+        prev_bar = self._last_len
+        if len(line) < prev_bar:
+            line = line + ' ' * (prev_bar - len(line))
+
+        if self.current_key:
+            key_line = f"  Current: {self.current_key}"
+            prev_key = self._last_key_len
+            if len(key_line) < prev_key:
+                key_line = key_line + ' ' * (prev_key - len(key_line))
+            # If we already have 2 lines on screen, move cursor up to overwrite key line
+            if self._last_key_len:
+                sys.stdout.write('\033[A\r' + key_line + '\n' + '\r' + line)
+            else:
+                sys.stdout.write('\r' + key_line + '\n' + '\r' + line)
+            self._last_key_len = len(key_line)
+        else:
+            sys.stdout.write('\r' + line)
+
         sys.stdout.flush()
         self._last_len = len(line)
 
