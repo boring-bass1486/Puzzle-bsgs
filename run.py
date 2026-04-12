@@ -58,11 +58,10 @@ def check_environment():
     print(f"    -p {PUBKEY} \\")
     print(f"    -s {START} -e {END}")
     print()
-    print("  Random scan (probabilistic, multi-machine, resumable):")
-    print(f"  python3 bsgs_scan.py --cpu -R 50 --seed 0 \\")
+    print("  Sequential scan (full range, resumable):")
+    print(f"  python3 bsgs_scan.py --cpu \\")
     print(f"    -p {PUBKEY} \\")
     print(f"    -s {START} -e {END}")
-    print("  # Other machines: --seed 1, --seed 2, ... (no overlap)")
     print("  # After Ctrl+C:   add --resume to continue from same position")
     print()
     if gpu_ok:
@@ -78,7 +77,9 @@ def check_environment():
 if __name__ == "__main__":
     check_environment()
 
-    print("  AUTO-STARTING puzzle #145 random scan (seed 0) ...")
+    print("  AUTO-STARTING puzzle #145 sequential scan ...")
+    print(f"  From: {START}")
+    print(f"  To  : {END}")
     print("  Press Ctrl+C to stop. Add --resume to continue from last position.")
     print("=" * 65)
     print()
@@ -87,8 +88,6 @@ if __name__ == "__main__":
     args = [
         sys.executable, script,
         "--cpu",
-        "-R", "50",
-        "--seed", "0",
         "-p", PUBKEY,
         "-s", START,
         "-e", END,
