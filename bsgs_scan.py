@@ -531,6 +531,7 @@ class ProgressBar:
         self._last_render = 0.0
         self._active      = True
         self._last_len    = 0    # chars printed on last render (for clean erase)
+        self.current_key  = None # current key being scanned (hex string)
 
     # ── public API ───────────────────────────────────────────────────────
 
@@ -541,6 +542,10 @@ class ProgressBar:
         self._samples.append((now, self.keys_done))
         if len(self._samples) > self.SPEED_WINDOW:
             self._samples.pop(0)
+
+    def set_key(self, key_hex):
+        """Update the current key being scanned."""
+        self.current_key = key_hex
 
     def render(self, force=False):
         """Render (or refresh) the progress line. Throttled to ~1/s unless force=True."""
@@ -610,13 +615,17 @@ class ProgressBar:
         ela_str = self._fmt_time(elapsed)
         scn_str = self._fmt_keys(self.keys_done)
 
+        key_str = ""
+        if self.current_key:
+            key_str = f" │ key {self.current_key}"
+
         if self.total_keys and self.total_keys > 0:
             pct  = min(self.keys_done / self.total_keys * 100, 100.0)
             rem  = (self.total_keys - self.keys_done) / speed if speed > 0 else None
             eta  = self._fmt_time(rem)
-            meta = f" {pct:5.2f}% │ {spd_str} │ {ela_str} elapsed │ ETA {eta} │ {scn_str}"
+            meta = f" {pct:5.2f}% │ {spd_str} │ {ela_str} elapsed │ ETA {eta} │ {scn_str}{key_str}"
         else:
-            meta = f" {spd_str} │ {ela_str} elapsed │ {scn_str} scanned"
+            meta = f" {spd_str} │ {ela_str} elapsed │ {scn_str} scanned{key_str}"
 
         # Bar width = remaining terminal space after meta
         bar_w = max(term_w - len(meta) - 4, 8)
@@ -868,14 +877,15 @@ def run_bsgs_cpu(args):
                     outer_pt = neg_advance if outer_pt is None else ec_add(outer_pt, neg_advance)
 
                 # Update progress bar data
+                cur_hex = hex(start_range + giant_offset * m_size)
                 bar.update(keys_this_batch)
+                bar.set_key(cur_hex)
 
                 # ── Periodic summary (every 10 batches or first batch) ────
                 SUMMARY_EVERY = 10
                 if batch_num == 1 or batch_num % SUMMARY_EVERY == 0:
                     speed = keys_this_batch / batch_time if batch_time > 0 else 0
                     bar.clear()
-                    cur_hex = hex(start_range + giant_offset * m_size)
                     summary = (f"  Batch #{batch_num:>5}  │  "
                                f"{bar._fmt_speed(speed):>14}  │  "
                                f"{format_time(elapsed):>8} elapsed")
@@ -885,6 +895,7 @@ def run_bsgs_cpu(args):
                         eta_s = format_time(rem) if rem else "?"
                         summary += f"  │  {pct:6.2f}%  │  ETA {eta_s}"
                     print(summary)
+                    print(f"  Current Key : {cur_hex}")
                     if false_pos:
                         print(f"    False positives so far: {false_pos}")
 

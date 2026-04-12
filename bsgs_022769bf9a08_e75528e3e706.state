@@ -1,0 +1,10 @@
+{
+  "pubkey": "022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc",
+  "start_range": "0xe75528e3e70682c2094cac629f6fbed82c07cd",
+  "end_range": "0xe75528e3e70682c2094cac629f9d38606927cd",
+  "m_size": 1048576,
+  "workers": 8,
+  "giant_offset": 12800000,
+  "total_elapsed": 37.147095918655396,
+  "saved_at": "2026-04-12T08:54:57.619537"
+}
