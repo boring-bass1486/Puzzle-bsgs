@@ -77,10 +77,11 @@ def check_environment():
 if __name__ == "__main__":
     check_environment()
 
-    print("  AUTO-STARTING puzzle #145 sequential scan ...")
-    print(f"  From: {START}")
-    print(f"  To  : {END}")
-    print("  Press Ctrl+C to stop. Add --resume to continue from last position.")
+    print("  AUTO-STARTING puzzle #145 random-batch scan ...")
+    print(f"  Range: {START}")
+    print(f"     to: {END}")
+    print("  Every batch picks its own independent random window.")
+    print("  Press Ctrl+C to stop.")
     print("=" * 65)
     print()
 
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     args = [
         sys.executable, script,
         "--cpu",
+        "--random-batch", "0",
         "-p", PUBKEY,
         "-s", START,
         "-e", END,

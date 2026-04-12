@@ -4,7 +4,7 @@
   "end_range": "0x1ffffffffffffffffffffffffffffffffffff",
   "m_size": 1048576,
   "workers": 8,
-  "giant_offset": 6400000,
-  "total_elapsed": 20.546799182891846,
-  "saved_at": "2026-04-12T09:18:57.872039"
+  "giant_offset": 54464000,
+  "total_elapsed": 171.46296429634094,
+  "saved_at": "2026-04-12T09:21:28.788154"
 }

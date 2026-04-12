@@ -795,8 +795,12 @@ def run_bsgs_cpu(args):
     batch_num    = 0
     false_pos    = 0
 
+    # Per-batch random mode: each batch picks its own independent random start
+    batch_rng = getattr(args, 'batch_rng', None)
+
     # Live progress bar — pre-seed with keys already covered in prior sessions
-    bar = ProgressBar(total_keys=range_size, workers=workers)
+    # In random-batch mode total range is irrelevant for percentage, so omit it
+    bar = ProgressBar(total_keys=(None if batch_rng else range_size), workers=workers)
     if resume_offset > 0:
         bar.update(resume_offset * m_size)   # seed the speed samples baseline
         # Shift start_time back so elapsed = resume_elapsed + session_time
@@ -818,12 +822,25 @@ def run_bsgs_cpu(args):
         ) as pool:
 
             while True:
-                if max_giant is not None and giant_offset >= max_giant:
+                # Sequential mode only: stop when full range is exhausted
+                if batch_rng is None and max_giant is not None and giant_offset >= max_giant:
                     bar.close()
                     print(f"\n[*] Full range searched — key not found.")
                     return False
 
                 batch_num += 1
+
+                # ── Per-batch random start ────────────────────────────────
+                # Each batch independently picks a random position within the
+                # full search range and computes the corresponding EC base point.
+                if batch_rng is not None and max_giant is not None:
+                    n_chunks_peek = min(DISPATCH_CHUNKS, max_giant)
+                    max_rand = max(0, max_giant - n_chunks_peek * CPU_MINI_BATCH)
+                    rand_giant = batch_rng.randint(0, max_rand) if max_rand > 0 else 0
+                    fwd_pt   = ec_mul(G, rand_giant * m_size)
+                    neg_fwd  = (fwd_pt[0], (P - fwd_pt[1]) % P)
+                    outer_pt = ec_add(Q, neg_fwd)
+                    giant_offset = rand_giant
 
                 # How many chunks this dispatch?
                 if max_giant is not None:
@@ -882,15 +899,21 @@ def run_bsgs_cpu(args):
                     print_found(found_key, P_target, args, total_start)
                     return True
 
-                # ── Advance outer_pt ──────────────────────────────────────
+                # ── Advance outer_pt / account for keys scanned ───────────
                 actual_chunks   = len(jobs)
-                new_offset      = giant_offset + actual_chunks * CPU_MINI_BATCH
                 keys_this_batch = actual_chunks * CPU_MINI_BATCH * m_size
-                keys_covered    = new_offset * m_size
                 elapsed         = time.time() - total_start
 
-                for _ in range(actual_chunks):
-                    outer_pt = neg_advance if outer_pt is None else ec_add(outer_pt, neg_advance)
+                if batch_rng is None:
+                    # Sequential mode: advance EC point and offset for next batch
+                    new_offset   = giant_offset + actual_chunks * CPU_MINI_BATCH
+                    keys_covered = new_offset * m_size
+                    for _ in range(actual_chunks):
+                        outer_pt = neg_advance if outer_pt is None else ec_add(outer_pt, neg_advance)
+                else:
+                    # Random-batch mode: next batch computes its own fresh point
+                    new_offset   = giant_offset   # placeholder — not used sequentially
+                    keys_covered = bar.keys_done + keys_this_batch
 
                 # Update progress bar data
                 cur_hex = hex(start_range + giant_offset * m_size)
@@ -905,11 +928,13 @@ def run_bsgs_cpu(args):
                     summary = (f"  Batch #{batch_num:>5}  │  "
                                f"{bar._fmt_speed(speed):>14}  │  "
                                f"{format_time(elapsed):>8} elapsed")
-                    if range_size:
+                    if batch_rng is None and range_size:
                         pct = min(keys_covered / range_size * 100, 100.0)
                         rem = (range_size - keys_covered) / speed if speed > 0 else None
                         eta_s = format_time(rem) if rem else "?"
                         summary += f"  │  {pct:6.2f}%  │  ETA {eta_s}"
+                    else:
+                        summary += f"  │  random position"
                     print(summary)
                     print(f"  Current Key : {cur_hex}")
                     if false_pos:
@@ -918,10 +943,11 @@ def run_bsgs_cpu(args):
                 # Force bar render after summary
                 bar.render(force=True)
 
-                giant_offset = new_offset
+                if batch_rng is None:
+                    giant_offset = new_offset
 
-                # ── Periodic auto-save ────────────────────────────────────
-                if batch_num % AUTOSAVE_EVERY == 0:
+                # ── Periodic auto-save (sequential mode only) ─────────────
+                if batch_rng is None and batch_num % AUTOSAVE_EVERY == 0:
                     total_elapsed_acc = resume_elapsed + (time.time() - total_start)
                     save_state(state_path, args, giant_offset, total_elapsed_acc)
 
@@ -1431,6 +1457,9 @@ Examples:
     parser.add_argument('-R', '--random-scan', type=float, default=None,
                         metavar='TKEYS',
                         help='Random scan: pick random start and scan X TKeys per attempt')
+    parser.add_argument('--random-batch', type=int, default=None,
+                        metavar='SEED',
+                        help='Per-batch random mode: every batch picks its own independent random start/end within the full range')
     parser.add_argument('-m', '--m-size', type=int, default=None,
                         help=f'Baby-step table size (default: {DEFAULT_M_SIZE:,} CPU / {DEFAULT_M_SIZE_GPU:,} GPU)')
 
@@ -1759,7 +1788,21 @@ def main():
         print("[!] M_SIZE too small (minimum: 1000)")
         sys.exit(1)
 
-    if args.random_scan:
+    if args.random_batch is not None:
+        import random as _random
+        rng = _random.Random(args.random_batch)
+        args.batch_rng = rng
+        print(f"[*] Per-batch random mode  (seed={args.random_batch})")
+        print(f"    Every batch picks an independent random window within the full range.")
+        print(f"    Range: {hex(args.start_range)} → {hex(args.end_range)}\n")
+        try:
+            search_fn(args)
+        except Exception as e:
+            print(f"\n[!] ERROR: {e}")
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
+    elif args.random_scan:
         run_random_scan(args, search_fn)
     else:
         if args.end_range and args.end_range <= args.start_range:
