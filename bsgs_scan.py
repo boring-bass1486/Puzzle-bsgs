@@ -1482,7 +1482,10 @@ def run_random_scan(args, search_fn):
 
     def attempts_for(target):
         if p >= 1.0: return 1
-        return math.ceil(math.log(1.0 - target) / math.log(1.0 - p))
+        log1mp = math.log1p(-p) if p < 1.0 else -math.inf
+        if log1mp == 0:
+            return math.ceil(-math.log(1.0 - target) / p)
+        return math.ceil(math.log1p(-target) / log1mp)
 
     def coverage_after(n):
         return (1.0 - (1.0 - p) ** n) * 100.0

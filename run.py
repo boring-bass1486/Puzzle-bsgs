@@ -5,7 +5,12 @@ Environment check and quick-start guide
 """
 
 import sys
+import os
 import multiprocessing
+
+PUBKEY = "022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc"
+START  = "0x10000000000000000000000000000000000000"
+END    = "0x1ffffffffffffffffffffffffffffffffffffff"
 
 def check_environment():
     print("=" * 65)
@@ -48,26 +53,15 @@ def check_environment():
     print("  CPU MODE IS AVAILABLE (no GPU required)")
     print("─" * 65)
     print()
-    print("  Quick-start (CPU):")
-    print("  python3 bsgs_scan.py --cpu -p <pubkey> -s <start> -e <end>")
-    print()
     print("  Example (puzzle #145):")
-    print("  python3 bsgs_scan.py --cpu \\")
-    print("    -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc \\")
-    print("    -s 0x10000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffffff")
-    print()
-    print("  Benchmark (calibrate this CPU, find optimal M_SIZE, project time):")
-    print("  python3 bsgs_scan.py --benchmark -s 0x10000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffffff")
-    print()
-    print("  Benchmark then auto-run with optimal settings:")
-    print("  python3 bsgs_scan.py --benchmark --run \\")
-    print("    -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc \\")
-    print("    -s 0x10000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffffff -o result.txt")
+    print(f"  python3 bsgs_scan.py --cpu \\")
+    print(f"    -p {PUBKEY} \\")
+    print(f"    -s {START} -e {END}")
     print()
     print("  Random scan (probabilistic, multi-machine, resumable):")
-    print("  python3 bsgs_scan.py --cpu -R 50 --seed 0 \\")
-    print("    -p 022769bf9a08e9c08a343de2a1c1c2b36aaece3d58af1e6a77c69afdfc47bc90bc \\")
-    print("    -s 0x10000000000000000000000000000000000000 -e 0x1ffffffffffffffffffffffffffffffffffffff")
+    print(f"  python3 bsgs_scan.py --cpu -R 50 --seed 0 \\")
+    print(f"    -p {PUBKEY} \\")
+    print(f"    -s {START} -e {END}")
     print("  # Other machines: --seed 1, --seed 2, ... (no overlap)")
     print("  # After Ctrl+C:   add --resume to continue from same position")
     print()
@@ -79,6 +73,24 @@ def check_environment():
     print("  python3 bsgs_scan.py --help")
     print()
     print("=" * 65)
+    print()
 
 if __name__ == "__main__":
     check_environment()
+
+    print("  AUTO-STARTING puzzle #145 random scan (seed 0) ...")
+    print("  Press Ctrl+C to stop. Add --resume to continue from last position.")
+    print("=" * 65)
+    print()
+
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bsgs_scan.py")
+    args = [
+        sys.executable, script,
+        "--cpu",
+        "-R", "50",
+        "--seed", "0",
+        "-p", PUBKEY,
+        "-s", START,
+        "-e", END,
+    ]
+    os.execv(sys.executable, args)
