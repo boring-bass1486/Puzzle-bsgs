@@ -934,7 +934,7 @@ def run_bsgs_cpu(args):
                         eta_s = format_time(rem) if rem else "?"
                         summary += f"  │  {pct:6.2f}%  │  ETA {eta_s}"
                     else:
-                        summary += f"  │  random position"
+                        summary += f"  │  {bar._fmt_keys(bar.keys_done)} scanned total"
                     print(summary)
                     print(f"  Current Key : {cur_hex}")
                     if false_pos:
@@ -957,11 +957,14 @@ def run_bsgs_cpu(args):
         bar.close()
         session_time      = time.time() - total_start
         total_elapsed_acc = resume_elapsed + session_time
-        keys_scanned      = giant_offset * m_size
+        keys_scanned      = bar.keys_done   # always accurate regardless of mode
 
-        in_random_mode = bool(getattr(args, 'random_scan', None))
-
-        if in_random_mode:
+        if batch_rng is not None:
+            # Per-batch random mode — no sequential state to save
+            print(f"\n\n[!] Search stopped after {format_time(session_time)}")
+            print(f"    Keys scanned  : {keys_scanned:,}")
+            print(f"    Speed (avg)   : {bar._fmt_speed(keys_scanned / session_time if session_time > 0 else 0)}")
+        elif bool(getattr(args, 'random_scan', None)):
             # Random-scan wrapper handles its own state; just report the attempt interruption
             print(f"\n\n[!] Attempt interrupted after {format_time(session_time)}"
                   f"  ({keys_scanned:,} keys scanned this attempt)")
