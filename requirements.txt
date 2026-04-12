@@ -1,0 +1,22 @@
+# BSGS GPU - Python Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+numpy>=1.19.0
+
+# CUDA support - choose ONE based on your CUDA version:
+
+# For CUDA 12.x (recommended for newer GPUs)
+cupy-cuda12x>=12.0.0
+
+# For CUDA 11.x (uncomment if using CUDA 11)
+# cupy-cuda11x>=11.0.0
+
+# Optional dependencies for enhanced functionality
+# argparse  # Built-in for Python 3.2+
+# datetime  # Built-in
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# black>=22.0.0
+# flake8>=4.0.0
